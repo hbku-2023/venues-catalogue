@@ -51,4 +51,3 @@
 			$elements[$delta]['contents'] = $view->buildRenderable($display_id);
 		}
 
-		return $elements;
