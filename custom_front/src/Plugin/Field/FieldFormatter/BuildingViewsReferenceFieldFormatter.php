@@ -6,7 +6,7 @@
 			$argument = $item->getValue()['argument'];
 
 			$title = $item->getValue()['title'];
-			$view = Views::getView($view_name);
+			$view = \Drupal\views\Views::getView($view_name);
 			// Someone may have deleted the View.
 			if (!is_object($view)) {
 				continue;
