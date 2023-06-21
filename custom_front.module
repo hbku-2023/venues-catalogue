@@ -1,0 +1,230 @@
+
+
+/**
+ * @file
+ * Contains custom_front.module.
+ */
+
+use Drupal\block\Entity\Block;
+use Drupal\Core\Form\FormState;
+use Drupal\Core\Link;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Url;
+use Drupal\image\Entity\ImageStyle;
+use Drupal\media\Entity\Media;
+use Drupal\node\Entity\Node;
+use Drupal\views\Views;
+
+/**
+ * Implements hook_help().
+ */
+function custom_front_help($route_name, RouteMatchInterface $route_match) {
+	switch ($route_name) {
+		// Main module help for the custom_front module.
+		case 'help.page.custom_front':
+			$output = '';
+			$output .= '<h3>' . t('About') . '</h3>';
+			$output .= '<p>' . t('My Awesome Module') . '</p>';
+			return $output;
+
+		default:
+	}
+}
+
+
+function custom_front_preprocess_block(&$vars) {
+	if ($vars['elements']['#id'] == 'hbku_venue_hbkuheader') {
+		$block = Block::load('hbku_venue_breadcrumbs');
+		if ($block) {
+			$vars['content']['breadcunmp'] = $block->getPlugin()->build();;
+		}
+
+		$mid = ($vars['content']['field_spotlight']['0']['#media']->id());
+		if ($vid = \Drupal::routeMatch()->getParameter('view_id')) {
+			$display_id = (\Drupal::routeMatch()->getParameter('display_id'));
+			$view = \Drupal\views\Views::getView($vid);
+			$view->setDisplay($display_id);
+			$displayObj = $view->getDisplay();
+			$vars['content']['#building'] = $displayObj->getOption('title');
+		};
+		if ($node = \Drupal::routeMatch()->getParameter('node')) {
+			$mid = ($node->hasField('field_media') && !$node->field_media->isEmpty()) ? $node->field_media->getString() : $mid;
+			$vars['content']['#building'] = $node->hasField('field_building') && !$node->field_building->isEmpty() ? $node->field_building->entity->label() : null;
+		}
+		$media = Media::load($mid);
+		if ($media) {
+			$fid = $media->getSource()->getSourceFieldValue($media);
+			$file = \Drupal\file\Entity\File::load($fid);
+			$style = ImageStyle::load('default');
+			$vars['content']['#background'] =$style->buildUrl($file->getFileUri());
+		}
+
+		$vars['content']['#site_name'] = \Drupal::config('system.site')->get('name');
+		$vars['content']['#slogan'] = \Drupal::config('system.site')->get('slogan');
+
+	}
+
+}
+
+
+/**
+ * Prepare view unformatted suggestions
+ * @param array $suggestions
+ * @param array $variables
+ * @param $hook
+ * @return array
+ */
+function custom_front_theme_suggestions_views_view_unformatted_alter(array &$suggestions, array $variables, $hook) {
+	;
+
+	$suggestions = array();
+	$suggestions[] = $hook . '__' . $variables['view']->current_display;
+	return $suggestions;
+}
+
+
+/**
+ * Prepare view unformatted suggestions
+ * @param array $suggestions
+ * @param array $variables
+ * @param $hook
+ * @return array
+ */
+function custom_front_theme_suggestions_views_view_alter(array &$suggestions, array $variables, $hook) {
+	$suggestions = array();
+	$suggestions[] = $hook . '__' . $variables['view']->id();
+	return $suggestions;
+}
+
+
+/**
+ * Prepare view unformatted suggestions
+ * @param array $suggestions
+ * @param array $variables
+ * @param $hook
+ * @return array
+ */
+function custom_front_theme_suggestions_form_alter(array &$suggestions, array $variables) {
+
+	$formId = $variables['element']['#id'] ?? null;
+	if ($formId) {
+		$suggestions[] = 'form__' . str_replace(['-', '_form'], ['_', ''], $formId);
+	}
+}
+
+function custom_front_theme_suggestions_views_exposed_form_alter(array &$suggestions, array $variables) {
+	$suggestions[] = 'views_exposed_form__' . str_replace(['-', '_form'], ['_', ''], $variables['form']['#id']);
+
+}
+
+/**
+ * Implements hook_views_data_alter().
+ */
+function custom_front_views_data_alter(array &$data) {
+
+	$data['search_api_index_venues']['nodes_titles'] = array(
+		'title' => t('Building titles'),
+		'filter' => array(
+			'title' => t('Building titles'),
+			'help' => t('Specify a list of building a node can have.'),
+			'field' => 'field_building',
+			'id' => 'node_titles_search'
+		),
+	);
+
+
+	$data['node_field_data']['building'] = array(
+		'title' => t('Building titles'),
+		'filter' => array(
+			'title' => t('Node titles'),
+			'help' => t('Specify a list of titles a node can have.'),
+			'field' => 'field_building',
+			'id' => 'node_titles'
+		),
+	);
+
+}
+
+/**
+ * @param $variables
+ * @return void
+ * @throws \Drupal\Core\Form\EnforcedResponseException
+ * @throws \Drupal\Core\Form\FormAjaxException
+ */
+
+function custom_front_preprocess_node(&$variables) {
+	if ($variables['node']->bundle() == 'venue' && $variables['view_mode'] == 'full') {
+		$form = [];
+		$view_id = 'venues_search';
+		$display_id = 'listing';
+		$view = Views::getView($view_id);
+		if ($view) {
+			$view->setDisplay($display_id);
+			$view->initHandlers();
+			$form_state = new FormState();
+			$form_state
+				->setFormState([
+					'view' => $view,
+					'display' => &$view->display_handler->display,
+					'exposed_form_plugin' => $view->display_handler->getPlugin('exposed_form'),
+					'rerender' => true,
+				])
+				->setMethod('get')
+				->setAlwaysProcess(true)
+				->disableRedirect();
+			$form = \Drupal::formBuilder()->buildForm('\Drupal\views\Form\ViewsExposedForm', $form_state);
+			unset($form['field_type']);
+			unset($form['field_capacity']);
+			unset($form['nodes_titles']);
+
+			$variables['exposed_form'] = $form;
+		}
+
+		$view = Views::getView('light');
+		$view->setDisplay('venues');
+		$view->setArguments([$variables['node']->id()]);
+		$variables['gallery'] = $view->render();
+	}
+
+}
+
+
+function custom_front_preprocess_paragraph(&$variables) {
+	if ($variables['paragraph']->getParagraphType()->id == 'technolgy') {
+		$items = [];
+		foreach ($variables['paragraph']->field_elements->referencedEntities() as $item) {
+			$items[$item->id()]['name'] = $item->field_name->entity->getName();
+			$items[$item->id()]['number'] = $item->field_number->getString();
+		}
+		$variables['items'] = $items;
+	}
+
+	if (in_array($variables['paragraph']->getParagraphType()->id,
+		['accommodate_events',
+			'access',
+			'process_dedicated_manpower',
+			'possible_seating_styles',
+			'funiture_and_equipment',
+			'potential_amenities'])) {
+
+		$view = Views::getView('paragraphes_venue');
+		$view->setDisplay('accommodate_events');
+		$view->setArguments([$variables['paragraph']->id(), $variables['paragraph']->getParagraphType()->id]);
+		$variables['items'] = $view->render();
+	}
+
+}
+
+/**
+ * add custom link to  breadcrumb
+ * @param $variables
+ * @return void
+ */
+function custom_front_preprocess_breadcrumb(&$variables) {
+	$node = \Drupal::routeMatch()->getParameter('node');
+	if ($node instanceof \Drupal\node\NodeInterface and $node->bundle() == 'venue') {
+		$url = new Url('view.venues_search.listing', ['building' => $node->field_building->getString()]);
+		$variables['breadcrumb']['2'] = $variables['breadcrumb']['1'];
+		$variables['breadcrumb']['1'] = ['text' => $node->field_building->entity->label(), 'url' => $url->toString()];
+	}
+}
