@@ -1,80 +1,4 @@
-
-
-namespace Drupal\custom_front\Plugin\Field\FieldFormatter;
-
-use Drupal\views\Views;
-use Drupal\Core\Field\FieldItemListInterface;
-use Drupal\Core\Field\FormatterBase;
-use Drupal\Core\Form\FormStateInterface;
-
-/**
- * Field formatter for Viewsreference Field.
- *
- * @FieldFormatter(
- *   id = "builing_viewsreference_formatter",
- *   label = @Translation("Building Views Reference"),
- *   field_types = {"viewsreference"}
- * )
- */
-class BuildingViewsReferenceFieldFormatter extends FormatterBase {
-
-	/**
-	 * {@inheritdoc}
-	 */
-	public static function defaultSettings() {
-		$options = parent::defaultSettings();
-
-		$options['plugin_types'] = ['block'];
-		return $options;
-	}
-
-	/**
-	 * {@inheritdoc}
-	 */
-	public function settingsForm(array $form, FormStateInterface $form_state) {
-		$form = parent::settingsForm($form, $form_state);
-
-		$types = Views::pluginList();
-		$options = [];
-		foreach ($types as $key => $type) {
-			if ($type['type'] == 'display') {
-				$options[str_replace('display:', '', $key)] = $type['title']->render();
-			}
-		}
-
-		$form['plugin_types'] = [
-			'#type' => 'checkboxes',
-			'#options' => $options,
-			'#title' => $this->t('View display plugins to allow'),
-			'#default_value' => $this->getSetting('plugin_types'),
-		];
-
-		return $form;
-	}
-
-	/**
-	 * {@inheritdoc}
-	 */
-	public function settingsSummary() {
-		$summary = [];
-		$settings = $this->getSettings();
-
-		$allowed = [];
-		foreach ($settings['plugin_types'] as $type) {
-			if ($type) {
-				$allowed[] = $type;
-			}
-		}
-		$summary[] = $this->t('Allowed plugins: @view', ['@view' => implode(', ', $allowed)]);
-		return $summary;
-	}
-
-	/**
-	 * {@inheritdoc}
-	 */
-	public function viewElements(FieldItemListInterface $items, $langcode) {
-
-		$elements = [];
+	$elements = [];
 
 		foreach ($items as $delta => $item) {
 			$view_name = $item->getValue()['target_id'];
@@ -128,6 +52,3 @@ class BuildingViewsReferenceFieldFormatter extends FormatterBase {
 		}
 
 		return $elements;
-	}
-
-}
