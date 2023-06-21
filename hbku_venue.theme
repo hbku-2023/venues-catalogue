@@ -1,0 +1,170 @@
+<?php
+
+/**
+ * @file
+ * Functions to support theming in the hbku_venue theme.
+ */
+
+/**
+ * Implements hook_theme_suggestions_page_alter().
+ */
+function hbku_venue_theme_suggestions_input_alter(array &$suggestions, array $variables) {
+	$element = $variables['element'];
+	if (array_key_exists('#reset', $element)) {
+		$suggestions[] = 'input__reset';
+	}
+
+}
+
+/**
+ * Implements hook_theme_suggestions_node_alter().
+ */
+function hbku_venue_theme_suggestions_node_alter(array &$suggestions, array $variables) {
+	/*$node = $variables['elements']['#node'];
+
+	if ($variables['elements']['#view_mode'] == "full") {
+
+	}*/
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for Block document templates.
+ */
+function hbku_venue_preprocess_block(array &$variables) {
+
+}
+
+/**
+ * Implements hook_theme_suggestions_field_alter().
+ */
+function hbku_venue_theme_suggestions_field_alter(array &$suggestions, array $variables) {
+	/*$element = $variables['element'];
+	$suggestions[] = 'field__' . $element['#view_mode'];
+	$suggestions[] = 'field__' . $element['#view_mode'] . '__' . $element['#field_name'];*/
+}
+
+/**
+ * Implements hook_theme_suggestions_field_alter().
+ */
+function hbku_venue_theme_suggestions_fieldset_alter(array &$suggestions, array $variables) {
+	/*$element = $variables['element'];
+	if (isset($element['#attributes']['class']) && in_array('form-composite', $element['#attributes']['class'])) {
+		$suggestions[] = 'fieldset__form_composite';
+	}*/
+}
+
+/**
+ * Implements hook_preprocess_node().
+ */
+function hbku_venue_preprocess_node(array &$variables) {
+	// Default to turning off byline/submitted.
+	//$variables['display_submitted'] = FALSE;
+}
+
+/**
+ * Implements hook_theme_suggestions_views_view_alter().
+ */
+function hbku_venue_theme_suggestions_views_view_alter(array &$suggestions, array $variables) {
+
+}
+
+/**
+ * Implements hook_preprocess_form().
+ */
+function hbku_venue_preprocess_form(array &$variables) {
+	//$variables['attributes']['novalidate'] = 'novalidate';
+}
+
+/**
+ * Implements hook_preprocess_select().
+ */
+function hbku_venue_preprocess_select(array &$variables) {
+	if ($variables['element']['#name'] == 'building') {
+		$variables['options']['0']['label'] = 'Building';;
+	}
+	if ($variables['element']['#name'] == 'field_type') {
+		$variables['options']['0']['label'] = 'Type of venue';;
+	}
+	if ($variables['element']['#name'] == 'field_capacity') {
+		$variables['options']['0']['label'] = 'Capacity';;
+	}
+}
+
+
+/**
+ * Implements hook_preprocess_details().
+ */
+function hbku_venue_preprocess_details(array &$variables) {
+	/*$variables['attributes']['class'][] = 'details';
+	$variables['summary_attributes']['class'] = 'summary';*/
+}
+
+/**
+ * Implements hook_theme_suggestions_details_alter().
+ */
+function hbku_venue_theme_suggestions_details_alter(array &$suggestions, array $variables) {
+
+}
+
+/**
+ * Implements hook_preprocess_menu_local_task().
+ */
+function hbku_venue_preprocess_menu_local_task(array &$variables) {
+	//$variables['element']['#link']['url']->setOption('attributes', ['class'=>'rounded']);
+}
+
+function hbku_venue_preprocess_page(&$variables) {
+
+//	kint($variables);die;
+
+}
+
+
+/**
+ * Implements hook_preprocess_field().
+ */
+function hbku_venue_preprocess_field(&$variables) {
+
+	if ($variables['entity_type'] == 'media' && $variables['field_name'] == 'field_media_image') {
+		$node = \Drupal::routeMatch()->getParameter('node');
+		if ($node && $node->bundle() == 'venue') {
+			foreach ($variables['items'] as $key => $item) {
+				$variables['items'][$key]['content']['#item_attributes']['class'][] = 'full-width';
+			}
+		}
+	}
+}
+
+/**
+ * @param $variables
+ * @return void
+ */
+function hbku_venue_preprocess_input__textfield(&$variables) {
+	if ($variables['element']['#name'] = 'search_api_fulltext') {
+		$variables['attributes']['class'][] = 'SearchAdvanced-input--Field';
+	}
+}
+
+
+/**
+ * @param $variables
+ * @return void
+ */
+function hbku_venue_preprocess_form_element(&$variables) {
+	if ($variables['element']['#type'] == 'select') {
+		$variables['attributes']['class'][] = 'SelectList';
+	}
+}
+
+/**
+ * @param $variables
+ * @return void
+ */
+function hbku_venue_preprocess_input__submit(&$variables) {
+	if ($variables['element']['#id'] == 'edit-submit-venues-search') {
+		$variables['attributes']['class'][] = 'l-btn l-btn--tertiary';
+	}
+	if ($variables['element']['#id'] == 'edit-reset') {
+		$variables['attributes']['class'][] = 'l-btn l-btn--secondary';
+	}
+}
